@@ -41,6 +41,10 @@ const FileLine = ({
   ignoreGit,
   startRenaming,
   endRenaming,
+  fileList = [], // new: all files in the current directory
+  lastSelectedIndex,
+  setLastSelectedIndex,
+  setSelectedFilesRange,
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -207,12 +211,21 @@ const FileLine = ({
   };
 
   const handleFileClick = (e) => {
-    if (e.ctrlKey || e.metaKey) {
+    const currentIndex = fileList.findIndex((f) => f === filepath);
+    if (e.shiftKey && typeof lastSelectedIndex === 'number' && fileList.length > 0) {
+      // Shift+Click: select range
+      const start = Math.min(lastSelectedIndex, currentIndex);
+      const end = Math.max(lastSelectedIndex, currentIndex);
+      const range = fileList.slice(start, end + 1);
+      setSelectedFilesRange(range);
+    } else if (e.ctrlKey || e.metaKey) {
       changeCurrentSelectDir("", true);
       toggleFileSelection(filepath); // 多选逻辑
+      setLastSelectedIndex(currentIndex);
     } else {
       clearFileSelection();
       toggleFileSelection(filepath);
+      setLastSelectedIndex(currentIndex);
       loadFile({ filepath }); // 加载文件
       if (isMobile) {
         pushScene({ nextScene: "edit" }); // 移动设备场景切换
@@ -378,5 +391,30 @@ const FileLine = ({
     </ContextMenu>
   );
 };
+
+// Utility: SelectAllCheckbox for use in DirectoryLine/LinkedLines
+export function SelectAllCheckbox({ fileList, selectedFiles, setSelectedFilesRange }) {
+  const allSelected = fileList.length > 0 && fileList.every(f => selectedFiles.includes(f));
+  const handleChange = (e) => {
+    if (e.target.checked) {
+      setSelectedFilesRange(fileList);
+    } else {
+      setSelectedFilesRange([]);
+    }
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', margin: '4px 0 4px 8px' }}>
+      <input
+        type="checkbox"
+        checked={allSelected}
+        onChange={handleChange}
+        style={{ marginRight: 6 }}
+      />
+      <span style={{ fontSize: 13 }}>Select All</span>
+    </div>
+  );
+}
+
+// Usage: In your DirectoryLine/LinkedLines, render <SelectAllCheckbox fileList={flatFileList} selectedFiles={selectedFiles} setSelectedFilesRange={setSelectedFilesRange} /> above the file list.
 
 export default FileLine;
