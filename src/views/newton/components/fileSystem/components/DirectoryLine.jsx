@@ -37,8 +37,13 @@ const LinkedLines = ({
   depth,
   fileList,
   editingFilepath,
+  lastSelectedIndex,
+  setLastSelectedIndex,
+  setSelectedFilesRange,
   ...res
 }) => {
+  // Build a flat list of file paths for range selection
+  const flatFileList = fileList.filter(f => f.type === "file").map(f => path.join(dirpath, f.name));
   return (
     <>
       {fileList.map((f) => {
@@ -51,6 +56,10 @@ const LinkedLines = ({
               depth={depth}
               filepath={filepath}
               ignoreGit={f.ignored}
+              fileList={flatFileList}
+              lastSelectedIndex={lastSelectedIndex}
+              setLastSelectedIndex={setLastSelectedIndex}
+              setSelectedFilesRange={setSelectedFilesRange}
             />
           );
         } else if (f.type === "dir") {
@@ -121,6 +130,16 @@ const DirectoryLineContent = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hovered, setHovered] = useState(false);
+
+  // Multi-select state for Shift+Click
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const { setSelectedFiles } = useFileStore((state) => ({
+    setSelectedFiles: state.setSelectedFiles,
+  }));
+  // Helper to set a range of selected files
+  const setSelectedFilesRange = (range) => {
+    setSelectedFiles(range);
+  };
 
   useEffect(() => {
       console.log("Effect triggered by:", {
@@ -497,6 +516,10 @@ const DirectoryLineContent = ({
           preRenamingDirpath={preRenamingDirpath}
           changePreRenamingDirpath={changePreRenamingDirpath}
           changeCurrentProjectRoot={changeCurrentProjectRoot}
+          // Multi-select support
+          lastSelectedIndex={lastSelectedIndex}
+          setLastSelectedIndex={setLastSelectedIndex}
+          setSelectedFilesRange={setSelectedFilesRange}
         />
       )}
     </List>
